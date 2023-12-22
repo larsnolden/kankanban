@@ -72,6 +72,7 @@ function App() {
   const [lanes, setLanes] = useState<LaneT[]>(initialLanes);
   const [activeCard, setActiveCard] = useState<CardT | null>(null);
   const { editor, onReady } = useFabricJSEditor();
+  const [selectedChild, setSelectedChild] = useState<CardT | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const createNewCard = (laneId: string, title: string) => {
@@ -115,7 +116,7 @@ function App() {
           ? adjustedEndHeight + heightBetween / 2
           : adjustedStartHeight + heightBetween / 2
       } T ${adjustedParentLeft} ${adjustedEndHeight}`,
-      { fill: "", stroke: "black" }
+      { fill: "", stroke: "#2563eb", strokeWidth: 3 }
     );
 
     editor.canvas.add(line);
@@ -153,12 +154,15 @@ function App() {
 
   const sensors = useSensors(useSensor(MouseSensor));
 
-  const handleParentChange = (childId: string, newParentId: string) => {
-    setCards((cards) =>
-      cards.map((card) =>
-        card.id === childId ? { ...card, parentId: newParentId } : card
-      )
-    );
+  const handleParentChange = (id: string) => {
+    if (!selectedChild) setSelectedChild(cards.find((c) => c.id === id));
+    else {
+      setCards((cards) =>
+        cards.map((card) =>
+          card.id === selectedChild.id ? { ...card, parentId: id } : card
+        )
+      );
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {

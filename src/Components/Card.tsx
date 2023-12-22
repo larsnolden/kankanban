@@ -52,9 +52,7 @@ const Card = forwardRef(
           data-id={id}
           className="flex justify-between items-center border-b rounded-t-xl py-3 px-4 md:px-5 dark:border-gray-700"
         >
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white select-none">
-            {title}
-          </h3>
+          <h3 className="text-gray-800 dark:text-white select-none">{title}</h3>
 
           <div className="flex items-center gap-x-1 ml-8" data-no-dnd="true">
             <div className="hs-tooltip inline-block">
@@ -83,6 +81,35 @@ const Card = forwardRef(
                   role="tooltip"
                 >
                   Edit
+                </span>
+              </button>
+            </div>
+            <div className="hs-tooltip inline-block">
+              <button
+                onClick={() => handleParentChange(id)}
+                type="button"
+                className="cursor-pointer hs-tooltip-toggle w-8 h-8 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-full border border-transparent text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                  />
+                </svg>
+
+                <span
+                  className="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 transition-opacity inline-block absolute invisible z-10 py-1 px-2 bg-gray-900 text-xs font-medium text-white rounded shadow-sm dark:bg-slate-700"
+                  role="tooltip"
+                >
+                  Connect
                 </span>
               </button>
             </div>

@@ -18,7 +18,7 @@ function Lane({
   cards: CardT[];
   potentialParentCards: CardT[];
   id: string;
-  handleParentChange: (childId: string, parentId: string) => void;
+  handleParentChange: (cardId: string) => void;
   handleCreateNewCard: (laneId: string, title: string) => void;
 }) {
   const [newCardTitle, setNewCardTitle] = useState("");
@@ -39,7 +39,7 @@ function Lane({
         ref={setNodeRef}
         className="flex flex-col h-fit w-min- bg-gray-100 border border-gray-200 shadow-sm rounded-xl p-4 md:p-5 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 mr-12"
       >
-        <div className="text-xl">{title}</div>
+        <div className="text-xl mb-4 font-bold">{title}</div>
         {cardsOfThisLane.map((card) => (
           <SortableCard
             key={card.id}
@@ -59,6 +59,7 @@ function Lane({
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddNewCard()}
               type="text"
+              placeholder="New Card"
               id="hs-trailing-button-add-on"
               name="hs-trailing-button-add-on"
               className="py-3 px-4 block w-full border-gray-200 shadow-sm rounded-s-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 dark:focus:ring-gray-600"
