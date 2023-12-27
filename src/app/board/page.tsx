@@ -156,12 +156,13 @@ function App() {
 
   const handleParentChange = (id: string) => {
     if (!selectedChild) setSelectedChild(cards.find((c) => c.id === id));
-    else {
+    else if (id !== selectedChild.id) {
       setCards((cards) =>
         cards.map((card) =>
           card.id === selectedChild.id ? { ...card, parentId: id } : card
         )
       );
+      setSelectedChild(null);
     }
   };
 

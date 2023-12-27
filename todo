@@ -1,0 +1,16 @@
+- Hover over card show it's connection, or you click a button on the card to show it's connections. Otherwise displaying all connections concurrently will be messy.
+- Connections can be removed by clicking the line.
+- A card can have multiple connections? parents: []CardT
+- rename card
+- A card can be it's own board
+
+- Lanes
+-- Add/Remove Lanes
+-- Rename Lanes
+
+- Card Details
+-- Free Text
+-- Choose Card color (line and border/pill?)
+-- Convert to board?
+-- Show all children as a TODO list
+

@@ -39,7 +39,7 @@ function Lane({
         ref={setNodeRef}
         className="flex flex-col h-fit w-min- bg-gray-100 border border-gray-200 shadow-sm rounded-xl p-4 md:p-5 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 mr-12"
       >
-        <div className="text-xl mb-4 font-bold">{title}</div>
+        <div className="text-xl mb-4 font-bold select-none">{title}</div>
         {cardsOfThisLane.map((card) => (
           <SortableCard
             key={card.id}

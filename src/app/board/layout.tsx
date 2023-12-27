@@ -5,5 +5,5 @@ export default function BoardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="p-24">{children}</div>;
+  return <div className="h-full bg-slate-50 pt-4 px-6">{children}</div>;
 }
