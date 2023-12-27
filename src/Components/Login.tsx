@@ -6,8 +6,6 @@ export default function Login({ children }: { children: React.ReactNode }) {
   const session = useSession();
   const supabase = useSupabaseClient();
 
-  if (!session?.user?.id) return <div>Loading</div>;
-
   if (!session)
     return (
       <div className="w-full h-full bg-gray-200">

@@ -1,8 +1,40 @@
+"use client";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+
 import NEST_LOGO_PATH from "@/../public/nest_logo.png";
 
+const NavbarLink = ({
+  children,
+  href,
+  pathname,
+  ...rest
+}: {
+  children: React.ReactNode;
+  href: string;
+  pathname: string;
+  rest?: any;
+}) => {
+  const isActive = pathname === href;
+
+  return (
+    <Link
+      href={href}
+      className={`font-medium text-gray-600 hover:text-gray-400 dark:text-gray-400 dark:hover:text-gray-500 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 "${
+        isActive &&
+        "text-blue-500 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
+      }`}
+      {...rest}
+    >
+      {children}
+    </Link>
+  );
+};
+
 export default function Navbar() {
+  const pathname = usePathname();
+
   return (
     <header className="relative flex flex-wrap sm:justify-start sm:flex-nowrap z-50 w-full bg-white text-sm py-4 dark:bg-gray-800">
       <nav
@@ -68,13 +100,9 @@ export default function Navbar() {
           className="hs-collapse hidden overflow-hidden transition-all duration-300 basis-full grow sm:block"
         >
           <div className="flex flex-col gap-5 mt-5 sm:flex-row sm:items-center sm:justify-end sm:mt-0 sm:ps-5">
-            <Link
-              className="font-medium text-blue-500 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
-              href="#"
-              aria-current="page"
-            >
+            <NavbarLink pathname={pathname} href="/board" aria-current="page">
               Boards
-            </Link>
+            </NavbarLink>
             <div className="hs-dropdown [--strategy:static] sm:[--strategy:fixed] [--adaptive:none]">
               <button
                 id="hs-mega-menu-basic-dr"
@@ -101,7 +129,7 @@ export default function Navbar() {
               <div className="hs-dropdown-menu transition-[opacity,margin] duration-[0.1ms] sm:duration-[150ms] hs-dropdown-open:opacity-100 opacity-0 sm:w-48 z-10 bg-white sm:shadow-md rounded-lg p-2 dark:bg-gray-800 sm:dark:border dark:border-gray-700 dark:divide-gray-700 before:absolute top-full sm:border before:-top-5 before:start-0 before:w-full before:h-5 hidden">
                 <Link
                   className="flex items-center gap-x-3.5 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                  href="#"
+                  href="/account/preferences"
                 >
                   Preferences
                 </Link>
@@ -111,6 +139,13 @@ export default function Navbar() {
                   href="#"
                 >
                   Billing
+                </Link>
+
+                <Link
+                  className="flex items-center gap-x-3.5 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                  href="/logout"
+                >
+                  Logout
                 </Link>
               </div>
             </div>
