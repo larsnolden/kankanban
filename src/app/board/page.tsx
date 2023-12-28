@@ -33,7 +33,7 @@ const initialLanes: LaneT[] = [
   },
   {
     id: uuidv4(),
-    pos: POS_MULTIPLIER,
+    pos: POS_MULTIPLIER * 2,
     title: "GOALS",
   },
 ];
@@ -301,7 +301,7 @@ function App() {
         onDragStart={handleDragStart}
       >
         <div className="flex flex-row">
-          {lanes.map((lane) => (
+          {lanes.sort(sortByPos).map((lane) => (
             <Lane
               id={lane.id}
               title={lane.title}
