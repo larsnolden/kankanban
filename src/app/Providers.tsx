@@ -6,16 +6,19 @@ import { SessionContextProvider } from "@supabase/auth-helpers-react";
 
 import Login from "@/Components/Login";
 import Navbar from "@/Components/Navbar";
+import { ApolloWrapper } from "@/apollo/ApolloWrapper";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionContextProvider supabaseClient={supabase}>
-      <Login>
-        <div className="relative flex flex-col h-full">
-          <Navbar />
-          {children}
-        </div>
-      </Login>
-    </SessionContextProvider>
+    <ApolloWrapper>
+      <SessionContextProvider supabaseClient={supabase}>
+        <Login>
+          <div className="relative flex flex-col h-full">
+            <Navbar />
+            {children}
+          </div>
+        </Login>
+      </SessionContextProvider>
+    </ApolloWrapper>
   );
 }

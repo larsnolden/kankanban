@@ -12,8 +12,10 @@ import {
   DragOverEvent,
   DragOverlay,
 } from "@dnd-kit/core";
+import { gql } from "@/__generated__/gql";
+
+import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { MouseSensor } from "@/helper/noDnd";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import Lane from "@/Components/Lane";
 import { CardT, Card } from "@/Components/Card";
 
@@ -67,7 +69,30 @@ const sortByPos = (c1: CardT | LaneT, c2: CardT | LaneT) => {
   return c1.pos > c2.pos ? 1 : -1;
 };
 
+const BOARD_LANES_QUERY = gql(/* GraphQL */ `
+  query BoardLanes($id: BigIntFilter!) {
+    boardCollection(filter: { id: $id }) {
+      edges {
+        node {
+          id
+          title
+          laneCollection {
+            edges {
+              node {
+                title
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
 function App() {
+  const { data } = useSuspenseQuery(BOARD_LANES_QUERY);
+  console.log("data", data);
   const [cards, setCards] = useState<CardT[]>(initialCards);
   const [lanes, setLanes] = useState<LaneT[]>(initialLanes);
   const [activeCard, setActiveCard] = useState<CardT | null>(null);
