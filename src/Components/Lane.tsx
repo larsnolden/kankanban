@@ -4,7 +4,26 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { gql } from "@/__generated__/gql";
+import { useFragment } from "@apollo/experimental-nextjs-app-support/ssr";
+
 import { SortableCard, CardT } from "./Card";
+
+export const LANE_FRAGMENT = gql(/* GraphQL */ `
+  fragment Lane on laneEdge {
+    node {
+      id
+      title
+      position
+      nodeId
+      cardCollection {
+        edges {
+          ...Card
+        }
+      }
+    }
+  }
+`);
 
 function Lane({
   title,
@@ -21,6 +40,12 @@ function Lane({
   handleParentChange: (cardId: string) => void;
   handleCreateNewCard: (laneId: string, title: string) => void;
 }) {
+  // const { data } = useFragment({
+  //   from: { id },
+  //   fragment: LANE_FRAGMENT,
+  // });
+
+  //console.log("Lane data: ", data);
   const [newCardTitle, setNewCardTitle] = useState("");
   const { setNodeRef } = useDroppable({ id });
   const cardsOfThisLane = cards.filter((c) => c.laneId === id);
@@ -50,9 +75,7 @@ function Lane({
         ))}
 
         <div className="mt-2">
-          <label for="hs-trailing-button-add-on" className="sr-only">
-            New Card
-          </label>
+          <label className="sr-only">New Card</label>
           <div className="flex rounded-lg shadow-sm">
             <input
               value={newCardTitle}

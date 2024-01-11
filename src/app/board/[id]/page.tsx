@@ -13,7 +13,7 @@ import {
   DragOverlay,
 } from "@dnd-kit/core";
 import { gql } from "@/__generated__/gql";
-
+import { useParams } from "next/navigation";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { MouseSensor } from "@/helper/noDnd";
 import Lane from "@/Components/Lane";
@@ -70,7 +70,7 @@ const sortByPos = (c1: CardT | LaneT, c2: CardT | LaneT) => {
 };
 
 const BOARD_LANES_QUERY = gql(/* GraphQL */ `
-  query BoardLanes($id: BigIntFilter!) {
+  query Board($id: BigIntFilter!) {
     boardCollection(filter: { id: $id }) {
       edges {
         node {
@@ -78,10 +78,7 @@ const BOARD_LANES_QUERY = gql(/* GraphQL */ `
           title
           laneCollection {
             edges {
-              node {
-                title
-                id
-              }
+              ...Lane
             }
           }
         }
@@ -91,10 +88,42 @@ const BOARD_LANES_QUERY = gql(/* GraphQL */ `
 `);
 
 function App() {
-  const { data } = useSuspenseQuery(BOARD_LANES_QUERY);
+  const { id } = useParams();
+  const { data } = useSuspenseQuery(BOARD_LANES_QUERY, {
+    variables: {
+      id: {
+        eq: id,
+      },
+    },
+  });
+
+  const fetchedLanes =
+    data.boardCollection?.edges[0].node.laneCollection.edges.map(
+      ({ node }) => ({
+        id: node.id,
+        pos: node.position,
+        title: node.title,
+        cards: node.cardCollection,
+      })
+    );
+
+  console.log("fetchedLanes", fetchedLanes);
+  const fetchedCards: CardT[] = fetchedLanes
+    .map((lane) =>
+      lane.cards.edges.map(({ node }) => ({
+        laneId: node.lane_id,
+        id: node.id,
+        title: node.title,
+        pos: node.position,
+        parentId: node.parent_card_id,
+      }))
+    )
+    .flat();
+  console.log("fetchedCards", fetchedCards);
   console.log("data", data);
-  const [cards, setCards] = useState<CardT[]>(initialCards);
-  const [lanes, setLanes] = useState<LaneT[]>(initialLanes);
+  const [cards, setCards] = useState<CardT[]>(fetchedCards);
+  const [lanes, setLanes] = useState<LaneT[]>(fetchedLanes);
+  console.log("lanes", lanes);
   const [activeCard, setActiveCard] = useState<CardT | null>(null);
   const { editor, onReady } = useFabricJSEditor();
   const [selectedChild, setSelectedChild] = useState<CardT | null>(null);
@@ -193,6 +222,7 @@ function App() {
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
+    console.log("handleDragOver", handleDragOver);
     const activeLaneId =
       active.data?.current?.sortable?.containerId || active.id;
     const overLaneId = over.data?.current?.sortable?.containerId || over.id;

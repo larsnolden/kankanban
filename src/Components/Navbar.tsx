@@ -100,7 +100,7 @@ export default function Navbar() {
           className="hs-collapse hidden overflow-hidden transition-all duration-300 basis-full grow sm:block"
         >
           <div className="flex flex-col gap-5 mt-5 sm:flex-row sm:items-center sm:justify-end sm:mt-0 sm:ps-5">
-            <NavbarLink pathname={pathname} href="/board" aria-current="page">
+            <NavbarLink pathname={pathname} href="/boards" aria-current="page">
               Boards
             </NavbarLink>
             <div className="hs-dropdown [--strategy:static] sm:[--strategy:fixed] [--adaptive:none]">

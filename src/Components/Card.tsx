@@ -2,6 +2,22 @@ import { forwardRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { gql } from "@/__generated__/gql";
+import { useFragment } from "@apollo/experimental-nextjs-app-support/ssr";
+
+export const CARD_FRAGMENT = gql(/* GraphQL */ `
+  fragment Card on cardEdge {
+    node {
+      id
+      title
+      description
+      lane_id
+      parent_card_id
+      position
+    }
+  }
+`);
+
 interface Parent {
   title: string;
   id: string;
@@ -37,6 +53,11 @@ const Card = forwardRef(
     }: any,
     ref
   ) => {
+    // const { data } = useFragment({
+    //   fragment: CARD_FRAGMENT,
+    //   from: { id },
+    // });
+    // console.log("Card  data: ", data);
     const [showDetails, setShowDetails] = useState(false);
     return (
       <div
