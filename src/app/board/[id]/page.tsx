@@ -304,7 +304,7 @@ function App() {
   };
 
   return (
-    <div className="z-20 h-full w-full" ref={containerRef}>
+    <div className="z-20 h-full overflow-x-scroll" ref={containerRef}>
       <FabricJSCanvas
         className="absolute h-full w-full z-30 pointer-events-none"
         onReady={onReady}
@@ -316,7 +316,7 @@ function App() {
         onDragOver={handleDragOver}
         onDragStart={handleDragStart}
       >
-        <div className="flex flex-row grow-0">
+        <div className="flex flex-row">
           {lanes.sort(sortByPos).map((lane) => (
             <Lane
               id={lane.id}

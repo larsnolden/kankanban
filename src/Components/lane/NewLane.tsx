@@ -37,76 +37,45 @@ export default function NewLane({
   // in editing mode an input is shown to set the new lanes name
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [newLaneName, setNewLaneName] = useState("");
-  const [addLane] = useMutation(ADD_NEW_LANE_MUTATION);
+  const [addLane, { loading }] = useMutation(ADD_NEW_LANE_MUTATION);
   const session = useSession();
 
-  const handleAddLane = () => {
-    const variables = {
-      objects: [
-        {
-          board_id: boardId,
-          title: newLaneName,
-          position:
-            highestLanePosition +
-              Number(process.env.NEXT_PUBLIC_POS_MULTIPLIER) || 65535,
-          user_id: session.user.id,
-        },
-      ],
-    };
-    session?.user?.id &&
-      addLane({
+  const handleAddLane = async () => {
+    if (session?.user?.id) {
+      const variables = {
+        objects: [
+          {
+            board_id: boardId,
+            title: newLaneName,
+            position:
+              highestLanePosition +
+                Number(process.env.NEXT_PUBLIC_POS_MULTIPLIER) || 65535,
+            user_id: session.user.id,
+          },
+        ],
+      };
+      await addLane({
         variables,
         update(cache, { data: { insertIntolaneCollection } }) {
-          console.log("insertIntolaneCollection", insertIntolaneCollection);
+          const newLane = insertIntolaneCollection.records[0];
+          // The mutation seems to create the new lane in the cache
+          // But we need to reference that new lane in the list of lanes on the board object in cache
+
           cache.modify({
+            id: cache.identify({ __typename: "board", id: boardId }), // Replace `boardId` with the actual board ID
             fields: {
-              laneCollection(existingLaneRefs = [], { readField }) {
-                const newLaneRef = cache.writeFragment({
-                  data: insertIntolaneCollection.records[0],
-                  fragment: gql(/*GraphQL*/ `
-                  fragment NewLane on lane {
-                    id
-                    title
-                    position
-                    nodeId
-                    cardCollection {
-                      edges {
-                        ...Card
-                      }
-                    }
-                  }
-                `),
-                });
-
-                console.log("newLaneRef", newLaneRef);
-
-                return [...existingLaneRefs, newLaneRef];
+              laneCollection(previousLaneCollection, { toReference }) {
+                //	the lane collection only holds references to the other cache objects
+                //	therefore we use this handy conversion function
+                return [previousLaneCollection, toReference(newLane)];
               },
             },
           });
-
-          const newLane = insertIntolaneCollection.records[0];
-
-          // Read the current state of the board from the cache
-          const existingBoard = cache.readQuery({
-            query: BOARD_QUERY, // Adjust with your actual board query
-            variables: { id: "1" }, // Adjust the variables to target the correct board
-          });
-
-          // Update the laneCollection with the new lane
-          existingBoard.board.laneCollection.edges = [
-            ...existingBoard.board.laneCollection.edges,
-            { __typename: "LaneEdge", node: newLane },
-          ];
-
-          // Write the updated board back to the cache
-          cache.writeQuery({
-            query: BOARD_QUERY, // Adjust with your actual board query
-            data: { board: existingBoard.board },
-            variables: { id: "1" }, // Adjust the variables to target the correct board
-          });
         },
       });
+      setNewLaneName("");
+      setIsEditingMode(false);
+    }
   };
   if (!isEditingMode)
     return (
