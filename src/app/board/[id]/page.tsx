@@ -16,53 +16,17 @@ import { gql } from "@/__generated__/gql";
 import { useParams } from "next/navigation";
 import { useSuspenseQuery } from "@apollo/experimental-nextjs-app-support/ssr";
 import { MouseSensor } from "@/helper/noDnd";
-import Lane from "@/Components/Lane";
+import Lane from "@/Components/lane/Lane";
+import NewLane from "@/Components/lane/NewLane";
 import { CardT, Card } from "@/Components/Card";
 
-const POS_MULTIPLIER = 65535;
+const POS_MULTIPLIER = Number(process.env.NEXT_PUBLIC_POS_MULTIPLIER) || 65535;
 
 interface LaneT {
   id: string;
   pos: number;
   title: string;
 }
-
-const initialLanes: LaneT[] = [
-  {
-    id: uuidv4(),
-    pos: POS_MULTIPLIER,
-    title: "TODO",
-  },
-  {
-    id: uuidv4(),
-    pos: POS_MULTIPLIER * 2,
-    title: "GOALS",
-  },
-];
-
-const initialCards: CardT[] = [
-  {
-    laneId: initialLanes[1].id,
-    title: "have a clean home",
-    id: uuidv4(),
-    pos: POS_MULTIPLIER * 2,
-    parentId: null,
-  },
-  {
-    laneId: initialLanes[1].id,
-    title: "built a business",
-    id: uuidv4(),
-    pos: POS_MULTIPLIER,
-    parentId: null,
-  },
-  {
-    laneId: initialLanes[0].id,
-    title: "bring out trash",
-    id: uuidv4(),
-    pos: POS_MULTIPLIER,
-    parentId: null,
-  },
-];
 
 const sortByPos = (c1: CardT | LaneT, c2: CardT | LaneT) => {
   if (c1.pos === c2.pos) return 0;
@@ -97,18 +61,16 @@ function App() {
     },
   });
 
-  const fetchedLanes =
-    data.boardCollection?.edges[0].node.laneCollection.edges.map(
-      ({ node }) => ({
-        id: node.id,
-        pos: node.position,
-        title: node.title,
-        cards: node.cardCollection,
-      })
-    );
+  const lanes = data.boardCollection?.edges[0].node.laneCollection.edges.map(
+    ({ node }) => ({
+      id: node.id,
+      pos: node.position,
+      title: node.title,
+      cards: node.cardCollection,
+    })
+  );
 
-  console.log("fetchedLanes", fetchedLanes);
-  const fetchedCards: CardT[] = fetchedLanes
+  const fetchedCards: CardT[] = lanes
     .map((lane) =>
       lane.cards.edges.map(({ node }) => ({
         laneId: node.lane_id,
@@ -122,7 +84,6 @@ function App() {
   console.log("fetchedCards", fetchedCards);
   console.log("data", data);
   const [cards, setCards] = useState<CardT[]>(fetchedCards);
-  const [lanes, setLanes] = useState<LaneT[]>(fetchedLanes);
   console.log("lanes", lanes);
   const [activeCard, setActiveCard] = useState<CardT | null>(null);
   const { editor, onReady } = useFabricJSEditor();
@@ -355,7 +316,7 @@ function App() {
         onDragOver={handleDragOver}
         onDragStart={handleDragStart}
       >
-        <div className="flex flex-row">
+        <div className="flex flex-row grow-0">
           {lanes.sort(sortByPos).map((lane) => (
             <Lane
               id={lane.id}
@@ -366,6 +327,10 @@ function App() {
               handleCreateNewCard={createNewCard}
             />
           ))}
+          <NewLane
+            highestLanePosition={lanes.sort(sortByPos)[lanes.length - 1].pos}
+            boardId={id}
+          />
         </div>
         <DragOverlay>
           {(activeCard && <Card key={activeCard.id} {...activeCard} />) || null}

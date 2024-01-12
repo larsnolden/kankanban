@@ -15,6 +15,9 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
 const documents = {
     "\n  fragment Card on cardEdge {\n    node {\n      id\n      title\n      description\n      lane_id\n      parent_card_id\n      position\n    }\n  }\n": types.CardFragmentDoc,
     "\n  fragment Lane on laneEdge {\n    node {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n": types.LaneFragmentDoc,
+    "\nmutation DeleteLane($filter: laneFilter!) {\n  deleteFromlaneCollection(filter: $filter) {\n    affectedCount\n    records {\n      id\n    }\n  }\n}\n": types.DeleteLaneDocument,
+    "\n\tmutation AddNewLane($objects: [laneInsertInput!]!) {\n  insertIntolaneCollection(objects: $objects) {\n    affectedCount\n    records {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n}\n": types.AddNewLaneDocument,
+    "\n                  fragment NewLane on lane {\n                    id\n                    title\n                    position\n                    nodeId\n                    cardCollection {\n                      edges {\n                        ...Card\n                      }\n                    }\n                  }\n                ": types.NewLaneFragmentDoc,
     "\n  query Board($id: BigIntFilter!) {\n    boardCollection(filter: { id: $id }) {\n      edges {\n        node {\n          id\n          title\n          laneCollection {\n            edges {\n              ...Lane\n            }\n          }\n        }\n      }\n    }\n  }\n": types.BoardDocument,
     "\n  query Boards {\n    boardCollection {\n      edges {\n        node {\n          id\n          title\n        }\n      }\n    }\n  }\n": types.BoardsDocument,
 };
@@ -41,6 +44,18 @@ export function gql(source: "\n  fragment Card on cardEdge {\n    node {\n      
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  fragment Lane on laneEdge {\n    node {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment Lane on laneEdge {\n    node {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nmutation DeleteLane($filter: laneFilter!) {\n  deleteFromlaneCollection(filter: $filter) {\n    affectedCount\n    records {\n      id\n    }\n  }\n}\n"): (typeof documents)["\nmutation DeleteLane($filter: laneFilter!) {\n  deleteFromlaneCollection(filter: $filter) {\n    affectedCount\n    records {\n      id\n    }\n  }\n}\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n\tmutation AddNewLane($objects: [laneInsertInput!]!) {\n  insertIntolaneCollection(objects: $objects) {\n    affectedCount\n    records {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n}\n"): (typeof documents)["\n\tmutation AddNewLane($objects: [laneInsertInput!]!) {\n  insertIntolaneCollection(objects: $objects) {\n    affectedCount\n    records {\n      id\n      title\n      position\n      nodeId\n      cardCollection {\n        edges {\n          ...Card\n        }\n      }\n    }\n  }\n}\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n                  fragment NewLane on lane {\n                    id\n                    title\n                    position\n                    nodeId\n                    cardCollection {\n                      edges {\n                        ...Card\n                      }\n                    }\n                  }\n                "): (typeof documents)["\n                  fragment NewLane on lane {\n                    id\n                    title\n                    position\n                    nodeId\n                    cardCollection {\n                      edges {\n                        ...Card\n                      }\n                    }\n                  }\n                "];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
