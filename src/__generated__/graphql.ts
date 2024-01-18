@@ -648,7 +648,7 @@ export type LaneUpdateResponse = {
   records: Array<Lane>;
 };
 
-export type CardFragment = { __typename?: 'cardEdge', node: { __typename?: 'card', id: any, title: string, description?: string | null, lane_id: any, parent_card_id?: any | null, position: number } } & { ' $fragmentName'?: 'CardFragment' };
+export type CardFragment = { __typename?: 'cardEdge', node: { __typename?: 'card', id: any, title: string, description?: string | null, lane_id: any, parent_card_id?: any | null, position: number } };
 
 export type UpdateCardMutationVariables = Exact<{
   set: CardUpdateInput;
@@ -666,10 +666,7 @@ export type DeleteCardMutationVariables = Exact<{
 
 export type DeleteCardMutation = { __typename?: 'Mutation', deleteFromcardCollection: { __typename?: 'cardDeleteResponse', affectedCount: number, records: Array<{ __typename?: 'card', nodeId: string, id: any, title: string }> } };
 
-export type LaneFragment = { __typename?: 'laneEdge', node: { __typename?: 'lane', id: any, title: string, position: number, nodeId: string, cardCollection?: { __typename?: 'cardConnection', edges: Array<(
-        { __typename?: 'cardEdge' }
-        & { ' $fragmentRefs'?: { 'CardFragment': CardFragment } }
-      )> } | null } } & { ' $fragmentName'?: 'LaneFragment' };
+export type LaneFragment = { __typename?: 'laneEdge', node: { __typename?: 'lane', id: any, title: string, position: number, nodeId: string, cardCollection?: { __typename?: 'cardConnection', edges: Array<{ __typename?: 'cardEdge', node: { __typename?: 'card', id: any, title: string, description?: string | null, lane_id: any, parent_card_id?: any | null, position: number } }> } | null } };
 
 export type DeleteLaneMutationVariables = Exact<{
   filter: LaneFilter;
@@ -683,20 +680,14 @@ export type AddNewLaneMutationVariables = Exact<{
 }>;
 
 
-export type AddNewLaneMutation = { __typename?: 'Mutation', insertIntolaneCollection?: { __typename?: 'laneInsertResponse', affectedCount: number, records: Array<{ __typename?: 'lane', id: any, title: string, position: number, nodeId: string, cardCollection?: { __typename?: 'cardConnection', edges: Array<(
-          { __typename?: 'cardEdge' }
-          & { ' $fragmentRefs'?: { 'CardFragment': CardFragment } }
-        )> } | null }> } | null };
+export type AddNewLaneMutation = { __typename?: 'Mutation', insertIntolaneCollection?: { __typename?: 'laneInsertResponse', affectedCount: number, records: Array<{ __typename?: 'lane', id: any, title: string, position: number, nodeId: string, cardCollection?: { __typename?: 'cardConnection', edges: Array<{ __typename?: 'cardEdge', node: { __typename?: 'card', id: any, title: string, description?: string | null, lane_id: any, parent_card_id?: any | null, position: number } }> } | null }> } | null };
 
 export type BoardQueryVariables = Exact<{
   id: BigIntFilter;
 }>;
 
 
-export type BoardQuery = { __typename?: 'Query', boardCollection?: { __typename?: 'boardConnection', edges: Array<{ __typename?: 'boardEdge', node: { __typename?: 'board', id: any, title: string, laneCollection?: { __typename?: 'laneConnection', edges: Array<(
-            { __typename?: 'laneEdge' }
-            & { ' $fragmentRefs'?: { 'LaneFragment': LaneFragment } }
-          )> } | null } }> } | null };
+export type BoardQuery = { __typename?: 'Query', boardCollection?: { __typename?: 'boardConnection', edges: Array<{ __typename?: 'boardEdge', node: { __typename?: 'board', id: any, title: string, laneCollection?: { __typename?: 'laneConnection', edges: Array<{ __typename?: 'laneEdge', node: { __typename?: 'lane', id: any, title: string, position: number, nodeId: string, cardCollection?: { __typename?: 'cardConnection', edges: Array<{ __typename?: 'cardEdge', node: { __typename?: 'card', id: any, title: string, description?: string | null, lane_id: any, parent_card_id?: any | null, position: number } }> } | null } }> } | null } }> } | null };
 
 export type AddNewCardMutationVariables = Exact<{
   cards: Array<CardInsertInput> | CardInsertInput;

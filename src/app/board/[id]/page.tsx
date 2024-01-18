@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { fabric } from "fabric";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
-import { v4 as uuidv4 } from "uuid";
+import { DragStartEvent } from "@dnd-kit/core";
 import {
   DndContext,
   closestCorners,
@@ -24,13 +24,7 @@ import { CardT, Card } from "@/Components/card/Card";
 
 const POS_MULTIPLIER = Number(process.env.NEXT_PUBLIC_POS_MULTIPLIER) || 65535;
 
-interface LaneT {
-  id: string;
-  pos: number;
-  title: string;
-}
-
-const sortByPos = (c1: CardT | LaneT, c2: CardT | LaneT) => {
+const sortByPos = (c1: { pos: number }, c2: { pos: number }) => {
   if (c1.pos === c2.pos) return 0;
   return c1.pos > c2.pos ? 1 : -1;
 };
@@ -94,11 +88,13 @@ const UPDATE_CARD_MUTATION = gql(/*GraphQL*/ `
 
 const DEFAULT_LINE_OPACITY = 0.2;
 // store the fabri.js line instances by cardId
-let cardToLineMapping = {};
+let cardToFabricElementMapping: {
+  [cardId: string]: Array<fabric.Circle | fabric.Path>;
+} = {};
 
 function App() {
   const session = useSession();
-  const { id: boardId } = useParams();
+  const { id: boardId }: { id: string } = useParams();
   const [addCardMutation] = useMutation(ADD_CARD_MUTATION);
   const [updateCardMutation] = useMutation(UPDATE_CARD_MUTATION);
   const { data } = useSuspenseQuery(BOARD_LANES_QUERY, {
@@ -115,7 +111,7 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(useSensor(MouseSensor));
 
-  const lanes = data.boardCollection?.edges[0].node.laneCollection.edges.map(
+  const lanes = data.boardCollection?.edges[0]?.node.laneCollection?.edges.map(
     ({ node }) => ({
       id: node.id,
       pos: node.position,
@@ -124,24 +120,9 @@ function App() {
     })
   );
 
-  const handleHighlightCardConnections = (
-    cardId: string,
-    highlight: boolean
-  ) => {
-    console.log(`handleHighlightCardConnection for card ${cardId}`);
-    const lines = cardToLineMapping[cardId];
-    if (lines && lines.length > 0) {
-      console.log("lines", lines);
-      lines.map((line) =>
-        line.set("opacity", highlight ? 1 : DEFAULT_LINE_OPACITY)
-      );
-      editor.canvas.renderAll();
-    }
-  };
-
-  const cards: CardT[] = lanes
-    .map((lane) =>
-      lane.cards.edges.map(({ node }) => ({
+  const cards = lanes
+    ?.map((lane) =>
+      lane.cards?.edges.map(({ node }) => ({
         laneId: node.lane_id,
         id: node.id,
         title: node.title,
@@ -152,38 +133,59 @@ function App() {
           handleHighlightCardConnections(node.id, highlight),
       }))
     )
-    .flat();
+    .flat() as CardT[];
+
+  console.log("cards", cards);
+
+  const handleHighlightCardConnections = (
+    cardId: string,
+    highlight: boolean
+  ) => {
+    const fabricElements = cardToFabricElementMapping[cardId];
+    if (fabricElements) {
+      fabricElements.map((element) =>
+        //	@ts-ignore
+        element.set("opacity", highlight ? 1 : DEFAULT_LINE_OPACITY)
+      );
+      editor?.canvas.renderAll();
+    }
+  };
 
   const drawLineBetweenElements = (
-    child,
-    parent,
-    offset,
-    childCardId,
-    parentCardId
+    child: Element,
+    parent: Element,
+    offset: DOMRect,
+    childCardId: string,
+    parentCardId: string
   ) => {
     const childRect = child.getBoundingClientRect();
     const parentRect = parent.getBoundingClientRect();
 
+    const circleRadius = 7;
+
     // Adjust starting and ending points by the offset
-    const adjustedChildRight = childRect.right - offset.left;
     const adjustedParentLeft = parentRect.left - offset.left;
+    const adjustedChildRight = childRect.right - offset.left;
     const adjustedStartHeight =
       childRect.top + childRect.height / 2 - offset.top;
     const adjustedEndHeight =
       parentRect.top + parentRect.height / 2 - offset.top;
 
-    const distanceBetween = adjustedParentLeft - adjustedChildRight;
+    const distanceBetween =
+      adjustedParentLeft - adjustedChildRight - circleRadius;
     const heightBetween = Math.abs(adjustedStartHeight - adjustedEndHeight);
 
     // Create the line with adjusted coordinates
     const line = new fabric.Path(
-      `M ${adjustedChildRight} ${adjustedStartHeight} Q ${
-        adjustedChildRight + distanceBetween / 10
-      } ${adjustedStartHeight} ${adjustedChildRight + distanceBetween / 2} ${
+      `M ${adjustedChildRight + circleRadius / 2} ${adjustedStartHeight} Q ${
+        adjustedChildRight + circleRadius / 2 + distanceBetween / 10
+      } ${adjustedStartHeight} ${
+        adjustedChildRight + circleRadius / 2 + distanceBetween / 2
+      } ${
         adjustedStartHeight > adjustedEndHeight
           ? adjustedEndHeight + heightBetween / 2
           : adjustedStartHeight + heightBetween / 2
-      } T ${adjustedParentLeft} ${adjustedEndHeight}`,
+      } T ${adjustedParentLeft - circleRadius / 2} ${adjustedEndHeight}`,
       {
         fill: "",
         stroke: "#2563eb",
@@ -192,35 +194,15 @@ function App() {
       }
     );
 
-    editor.canvas.add(line);
-
-    // highlight onHover
-    line.on("mouseover", () => {
-      line.set("opacity", 1);
-      console.log("mouseover");
-      editor.canvas.renderAll();
-    });
-
-    line.on("mouseout", () => {
-      line.set("opacity", DEFAULT_LINE_OPACITY);
-      console.log("mousout");
-      editor.canvas.renderAll();
-    });
-
-    cardToLineMapping[childCardId] = [line];
-    // parents can have multiple lines associated
-    cardToLineMapping[parentCardId] = cardToLineMapping[parentCardId]
-      ? [...cardToLineMapping[parentCardId], line]
-      : [line];
-
     // Create circles at the start and end points of the line
-    const circleRadius = 7;
     const startCircle = new fabric.Circle({
       left: adjustedChildRight - circleRadius,
       top: adjustedStartHeight - circleRadius,
       radius: circleRadius,
       fill: "#2563eb",
       opacity: DEFAULT_LINE_OPACITY,
+      startAngle: -90,
+      endAngle: 90,
     });
 
     const endCircle = new fabric.Circle({
@@ -229,30 +211,45 @@ function App() {
       radius: circleRadius,
       fill: "#2563eb",
       opacity: DEFAULT_LINE_OPACITY,
+      startAngle: 90,
+      endAngle: -90,
     });
 
+    cardToFabricElementMapping[childCardId] = [line, startCircle, endCircle];
+    // parents can have multiple lines associated
+    cardToFabricElementMapping[parentCardId] = cardToFabricElementMapping[
+      parentCardId
+    ]
+      ? [
+          ...cardToFabricElementMapping[parentCardId],
+          line,
+          startCircle,
+          endCircle,
+        ]
+      : [line, startCircle, endCircle];
+
     // Add line and circles to the canvas
-    editor.canvas.add(line, startCircle, endCircle);
+    editor?.canvas.add(line, startCircle, endCircle);
   };
 
   const drawConnections = () => {
     if (containerRef.current) {
       // reset all line references
-      cardToLineMapping = {};
+      cardToFabricElementMapping = {};
 
+      // clear all existing connections
+      editor?.canvas.clear();
+
+      // offset due to padding and scroll
       const offset = containerRef.current.getBoundingClientRect();
-      editor.canvas.clear();
-      console.log("drawConnections");
-      cards.forEach((card) => {
-        if (card.parentId) {
-          const childElement = containerRef.current.querySelector(
+
+      cards?.forEach((card) => {
+        if (card && card.parentId) {
+          const childElement = containerRef?.current?.querySelector(
             `[data-id="${card.id}"]`
           );
-          const parentElement = containerRef.current.querySelector(
+          const parentElement = containerRef?.current?.querySelector(
             `[data-id="${card.parentId}"]`
-          );
-          console.log(
-            `childElement: ${card.id}, parentElement: ${card.parentId}`
           );
           if (childElement && parentElement) {
             drawLineBetweenElements(
@@ -312,9 +309,11 @@ function App() {
     // add card on top of list
     // assume that `cards` is sorted
     let pos = POS_MULTIPLIER;
-    const laneCards = cards.filter((c) => c.laneId === laneId).sort(sortByPos);
+    const laneCards = cards
+      .filter((card) => card?.laneId === laneId)
+      .sort(sortByPos);
     if (laneCards.length > 0) {
-      const posOfFirstCardInList = laneCards[0].pos;
+      const posOfFirstCardInList = laneCards[0]?.pos || POS_MULTIPLIER;
       pos = posOfFirstCardInList / 2;
     }
     if (session?.user?.id) {
@@ -330,8 +329,8 @@ function App() {
             },
           ],
         },
+        // @ts-ignore
         update(cache, { data: { insertIntocardCollection } }) {
-          console.log("insertIntocardCollection", insertIntocardCollection);
           const newCard = insertIntocardCollection.records[0];
 
           cache.modify({
@@ -369,7 +368,8 @@ function App() {
   }, [editor, cards, drawConnections]);
 
   const handleParentChange = (id: string) => {
-    if (!selectedChild) setSelectedChild(cards.find((c) => c.id === id));
+    if (!selectedChild)
+      setSelectedChild(cards.find((c) => c.id === id) || null);
     else if (id !== selectedChild.id) {
       cards.map((card) =>
         card.id === selectedChild.id
@@ -382,45 +382,110 @@ function App() {
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    console.log("handleDragOver", handleDragOver);
-    const activeLaneId =
-      active.data?.current?.sortable?.containerId || active.id;
-    const overLaneId = over.data?.current?.sortable?.containerId || over.id;
+    if (active && over) {
+      console.log("handleDragOver", handleDragOver);
+      const activeLaneId =
+        active.data?.current?.sortable?.containerId || active.id;
+      const overLaneId = over.data?.current?.sortable?.containerId || over.id;
 
-    // the id of the card above/over
-    if (activeLaneId === overLaneId || !activeLaneId || !overLaneId)
-      return null;
-    if (activeLaneId !== overLaneId) {
-      const cardsOfLane = cards.filter((c) => c.laneId === overLaneId);
+      // the id of the card above/over
+      if (activeLaneId === overLaneId || !activeLaneId || !overLaneId)
+        return null;
+      if (activeLaneId !== overLaneId) {
+        const cardsOfLane = cards.filter((c) => c.laneId === overLaneId);
 
-      let cardAbovePos;
-      let cardBelowPos;
+        let cardAbovePos;
+        let cardBelowPos;
 
-      // find the card below
-      const cardBelowId = over.id;
-      const cardBelow = cards.find((c) => c.id === cardBelowId);
-      if (cardBelow) {
-        cardBelowPos = cardBelow.pos;
+        // find the card below
+        const cardBelowId = over.id;
+        const cardBelow = cards.find((c) => c.id === cardBelowId);
+        if (cardBelow) {
+          cardBelowPos = cardBelow.pos;
+        }
+        const cardsAbove = cardBelow
+          ? cardsOfLane.sort(sortByPos).filter((c) => c.pos < cardBelow.pos)
+          : cardsOfLane.sort(sortByPos);
+        if (cardsAbove.length > 0) {
+          cardAbovePos = cardsAbove[cardsAbove.length - 1].pos;
+        }
+
+        let pos: number;
+        if (cardAbovePos && cardBelowPos) {
+          pos = (cardBelowPos - cardAbovePos) / 2;
+        } else if (cardAbovePos) {
+          pos = cardAbovePos + POS_MULTIPLIER;
+        } else if (cardBelowPos) {
+          pos = cardBelowPos / 2;
+        } else {
+          pos = POS_MULTIPLIER;
+        }
+
+        cards.map((c) =>
+          c.id === active.id
+            ? updateCard({
+                ...c,
+                laneId: overLaneId,
+                pos,
+              })
+            : c
+        );
       }
-      const cardsAbove = cardBelow
-        ? cardsOfLane.sort(sortByPos).filter((c) => c.pos < cardBelow.pos)
-        : cardsOfLane.sort(sortByPos);
-      if (cardsAbove.length > 0) {
-        cardAbovePos = cardsAbove[cardsAbove.length - 1].pos;
+    }
+    return null;
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveCard(null);
+    // fires after a draggable element is dropped
+    const { active, over } = event;
+    if (active && over) {
+      const activeLaneId = active.data?.current?.sortable?.containerId;
+      const overLaneId = over.data?.current?.sortable?.containerId;
+
+      // do nothing if lanes changed
+      if (activeLaneId !== overLaneId || !activeLaneId || !overLaneId)
+        return null;
+
+      let pos = 0;
+
+      const cardsOfLane = cards
+        .filter((c) => c.laneId === activeLaneId)
+        .sort(sortByPos);
+
+      const overCard = cardsOfLane.find((c) => c.id === over.id);
+      if (overCard) {
+        const cardsBelowOverCard = cardsOfLane.filter(
+          (c) => c.pos > overCard.pos
+        );
+        const cardWasBelowOverCard = cardsBelowOverCard
+          .map((c) => c.id)
+          .includes(String(active.id));
+
+        if (cardWasBelowOverCard) {
+          // then the card should now be above the `over card`
+          const cardAboveOverCardIdx = cardsOfLane.indexOf(overCard) - 1;
+          if (cardAboveOverCardIdx >= 0) {
+            const cardAboveOverCard = cardsOfLane[cardAboveOverCardIdx];
+            pos = overCard.pos - (overCard.pos - cardAboveOverCard.pos) / 2;
+          } else {
+            // there is no card above
+            pos = overCard.pos / 2;
+          }
+        } else {
+          // if the card was above the `over` card, then it should now be below the `over` card
+          const cardBelowOverCardIdx = cardsOfLane.indexOf(overCard) + 1;
+          if (cardBelowOverCardIdx <= cardsOfLane.length - 1) {
+            // there is a card below
+            const cardBelowOverCard = cardsOfLane[cardBelowOverCardIdx];
+            pos = overCard.pos + (cardBelowOverCard.pos - overCard.pos) / 2;
+          } else {
+            pos = overCard.pos + POS_MULTIPLIER;
+          }
+        }
       }
 
-      let pos;
-      if (cardAbovePos && cardBelowPos) {
-        pos = (cardBelowPos - cardAbovePos) / 2;
-      } else if (cardAbovePos) {
-        pos = cardAbovePos + POS_MULTIPLIER;
-      } else if (cardBelowPos) {
-        pos = cardBelowPos / 2;
-      } else {
-        pos = POS_MULTIPLIER;
-      }
-
-      cards.map((c) =>
+      return cards.map((c) =>
         c.id === active.id
           ? updateCard({
               ...c,
@@ -430,70 +495,12 @@ function App() {
           : c
       );
     }
-    return null;
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveCard(null);
-    // fires after a draggable element is dropped
-    const { active, over } = event;
-    const activeLaneId = active.data?.current?.sortable?.containerId;
-    const overLaneId = over.data?.current?.sortable?.containerId;
-
-    // do nothing if lanes changed
-    if (activeLaneId !== overLaneId || !activeLaneId || !overLaneId)
-      return null;
-
-    let pos = 0;
-
-    const cardsOfLane = cards
-      .filter((c) => c.laneId === activeLaneId)
-      .sort(sortByPos);
-
-    const overCard = cardsOfLane.find((c) => c.id === over.id);
-
-    const cardsBelowOverCard = cardsOfLane.filter((c) => c.pos > overCard.pos);
-    const cardWasBelowOverCard = cardsBelowOverCard
-      .map((c) => c.id)
-      .includes(String(active.id));
-
-    if (cardWasBelowOverCard) {
-      // then the card should now be above the `over card`
-      const cardAboveOverCardIdx = cardsOfLane.indexOf(overCard) - 1;
-      if (cardAboveOverCardIdx >= 0) {
-        const cardAboveOverCard = cardsOfLane[cardAboveOverCardIdx];
-        pos = overCard.pos - (overCard.pos - cardAboveOverCard.pos) / 2;
-      } else {
-        // there is no card above
-        pos = overCard.pos / 2;
-      }
-    } else {
-      // if the card was above the `over` card, then it should now be below the `over` card
-      const cardBelowOverCardIdx = cardsOfLane.indexOf(overCard) + 1;
-      if (cardBelowOverCardIdx <= cardsOfLane.length - 1) {
-        // there is a card below
-        const cardBelowOverCard = cardsOfLane[cardBelowOverCardIdx];
-        pos = overCard.pos + (cardBelowOverCard.pos - overCard.pos) / 2;
-      } else {
-        pos = overCard.pos + POS_MULTIPLIER;
-      }
-    }
-
-    return cards.map((c) =>
-      c.id === active.id
-        ? updateCard({
-            ...c,
-            laneId: overLaneId,
-            pos,
-          })
-        : c
-    );
-  };
-
-  const handleDragStart = (event) => {
+  const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
 
-    setActiveCard(cards.find((c) => c.id === active.id));
+    setActiveCard(cards.find((c) => c.id === active.id) || null);
   };
 
   return (
@@ -511,19 +518,28 @@ function App() {
         onDragStart={handleDragStart}
       >
         <div className="flex flex-row z-10">
-          {lanes.sort(sortByPos).map((lane) => (
-            <Lane
-              id={lane.id}
-              title={lane.title}
-              cards={cards.filter((c) => c.laneId === lane.id).sort(sortByPos)}
-              handleParentChange={handleParentChange}
-              potentialParentCards={cards.filter((c) => c.laneId !== lane.id)}
-              handleCreateNewCard={createNewCard}
-            />
-          ))}
+          {lanes &&
+            lanes
+              .sort(sortByPos)
+              .map((lane) => (
+                <Lane
+                  id={lane.id}
+                  title={lane.title}
+                  cards={cards
+                    .filter((c) => c.laneId === lane.id)
+                    .sort(sortByPos)}
+                  handleParentChange={handleParentChange}
+                  potentialParentCards={cards.filter(
+                    (c) => c.laneId !== lane.id
+                  )}
+                  handleCreateNewCard={createNewCard}
+                />
+              ))}
           <NewLane
             highestLanePosition={
-              lanes.length > 0 ? lanes.sort(sortByPos)[lanes.length - 1].pos : 0
+              lanes && lanes.length > 0
+                ? lanes.sort(sortByPos)[lanes.length - 1].pos
+                : 0
             }
             boardId={boardId}
           />

@@ -1,11 +1,13 @@
 import { forwardRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
+import Link from "next/link";
 import { CSS } from "@dnd-kit/utilities";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import EditCardModal from "./EditCardModal";
 
 import { gql } from "@/__generated__/gql";
 import { useFragment } from "@apollo/experimental-nextjs-app-support/ssr";
+import { ArrowRightEndOnRectangleIcon } from "@heroicons/react/24/solid";
 
 export const CARD_FRAGMENT = gql(/* GraphQL */ `
   fragment Card on cardEdge {
@@ -59,11 +61,11 @@ const Card = forwardRef(
     }: any,
     ref
   ) => {
-    // const { data } = useFragment({
-    //   fragment: CARD_FRAGMENT,
-    //   from: { id },
-    // });
-    // console.log("Card  data: ", data);
+    const { data } = useFragment({
+      fragment: CARD_FRAGMENT,
+      from: { id },
+    });
+    console.log("Card  data: ", data);
     const [showDetails, setShowDetails] = useState(false);
     return (
       <>
@@ -149,6 +151,21 @@ const Card = forwardRef(
                     Connect
                   </span>
                 </button>
+              </div>
+              <div className="hs-tooltip inline-block">
+                <Link
+                  type="button"
+                  href={`board/sub/${id}`}
+                  className="cursor-pointer hs-tooltip-toggle w-8 h-8 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-full border border-transparent text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
+                >
+                  <ArrowRightEndOnRectangleIcon />
+                  <span
+                    className="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 transition-opacity inline-block absolute invisible z-10 py-1 px-2 bg-gray-900 text-xs font-medium text-white rounded shadow-sm dark:bg-slate-700"
+                    role="tooltip"
+                  >
+                    Connect
+                  </span>
+                </Link>
               </div>
             </div>
           </div>
